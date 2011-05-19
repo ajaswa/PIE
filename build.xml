@@ -55,6 +55,13 @@
             <fileset file="${src_dir}/htc_close.txt" />
         </concat>
 
+        <concat destfile="${build_dir}/PIE_delay.htc">
+            <fileset file="${src_dir}/htc_open_delay.txt" />
+            <fileset file="${build_dir}/script_uncompressed.js" />
+            <fileset file="${src_dir}/htc_init_delay.js" />
+            <fileset file="${src_dir}/htc_close.txt" />
+        </concat>
+
         <concat destfile="${build_dir}/PIE_uncompressed.js">
             <fileset file="${src_dir}/js_open.js" />
             <fileset file="${build_dir}/script_uncompressed.js" />
@@ -95,12 +102,31 @@
         <replace file="${build_dir}/PIE.htc" token="$Version$" value="${version}"/>
         <replace file="${build_dir}/PIE.js" token="$Version$" value="${version}"/>
 
-        <delete file="${build_dir}/temp.js" />
-        <delete file="${build_dir}/htc_init_compressed.js" />
-        <delete file="${build_dir}/script_uncompressed.js" />
-        <delete file="${build_dir}/script_compressed.js" />
     </target>
 
+    <target name="build-delay-compressed" depends="build-uncompressed">
+        <exec executable="java">
+            <arg line='-jar tools/compiler.jar
+                       --js ${build_dir}/script_uncompressed.js
+                       --js ${src_dir}/htc_init_delay.js
+                       --js ${src_dir}/closure_preservefunctions.js
+                       --module "script_compressed:1"
+                       --module "htc_init_delay_compressed:1"
+                       --module "temp:1"
+                       --module_output_path_prefix ${build_dir}/
+                       --compilation_level ADVANCED_OPTIMIZATIONS
+                       --externs ${src_dir}/closure_externs.js' />
+        </exec>
+
+        <concat destfile="${build_dir}/PIE_delay_min.htc">
+            <fileset file="${src_dir}/htc_open_delay.txt" />
+            <fileset file="${build_dir}/script_compressed.js" />
+            <fileset file="${build_dir}/htc_init_delay_compressed.js" />
+            <fileset file="${src_dir}/htc_close.txt" />
+        </concat>
+
+        <replace file="${build_dir}/PIE_delay_min.htc" token="$Version$" value="${version}"/>
+    </target>
 
     <target name="copy-wrappers">
         <copy todir="${build_dir}">
@@ -108,8 +134,15 @@
         </copy>
     </target>
 
+    <target name="build-clean">
+      <delete file="${build_dir}/temp.js" />
+      <delete file="${build_dir}/htc_init_compressed.js" />
+      <delete file="${build_dir}/script_uncompressed.js" />
+      <delete file="${build_dir}/script_compressed.js" />
+    </target>
 
-    <target name="build" depends="build-uncompressed,build-compressed" />
+
+    <target name="build" depends="build-uncompressed,build-compressed,build-delay-compressed,build-clean" />
 
     <target name="package" depends="clean,build,copy-wrappers">
         <!-- Create distribution bundle -->
